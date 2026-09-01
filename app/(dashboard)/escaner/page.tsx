@@ -257,40 +257,40 @@ export default function EscanerQRPage() {
       </div>
 
       {/* Opción Alternativa: Código Manual */}
-      <div className="mt-8 rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl backdrop-blur-md">
-        <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300">
-          <Keyboard className="h-4 w-4 text-emerald-500" />
-          ¿No lee el código QR o etiqueta dañada?
-        </div>
-        <p className="mb-4 text-xs text-slate-400">
-          Puedes ingresar manualmente la Placa SENA o Código ID:
-        </p>
+<div className="mt-8 rounded-3xl border border-slate-800 bg-slate-900/80 p-4 sm:p-6 shadow-xl backdrop-blur-md">
+  <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300">
+    <Keyboard className="h-4 w-4 text-emerald-500" />
+    ¿No lee el código QR o etiqueta dañada?
+  </div>
+  <p className="mb-4 text-xs text-slate-400">
+    Puedes ingresar manualmente la Placa SENA o Código ID:
+  </p>
 
-        <form onSubmit={handleCodigoManualSubmit} className="flex items-center gap-2">
-          <input
-            type="text"
-            placeholder="Ej: SENA-BIENESTAR-154"
-            value={codigoManual}
-            onChange={(e) => setCodigoManual(e.target.value)}
-            disabled={loading}
-            className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-xs font-mono text-white outline-none focus:border-emerald-500 disabled:opacity-50"
-          />
-          <button
-            type="submit"
-            disabled={loading || !codigoManual.trim()}
-            className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-xs font-bold text-white transition-all hover:bg-emerald-500 active:scale-95 disabled:opacity-50 shrink-0"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                Validar
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-        </form>
-      </div>
+  <form onSubmit={handleCodigoManualSubmit} className="flex flex-col sm:flex-row items-stretch gap-2">
+    <input
+      type="text"
+      placeholder="Ej: SENA-BIENESTAR-154"
+      value={codigoManual}
+      onChange={(e) => setCodigoManual(e.target.value)}
+      disabled={loading}
+      className="w-full flex-1 rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-xs font-mono text-white outline-none focus:border-emerald-500 disabled:opacity-50"
+    />
+    <button
+      type="submit"
+      disabled={loading || !codigoManual.trim()}
+      className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-xs font-bold text-white transition-all hover:bg-emerald-500 active:scale-95 disabled:opacity-50 shrink-0"
+    >
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <>
+          Validar
+          <ArrowRight className="h-4 w-4" />
+        </>
+      )}
+    </button>
+  </form>
+</div>
     </div>
   )
 }
