@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { notificarNuevaSolicitud } from '@/lib/email'
 
 interface CrearSolicitudParams {
   elementoId: string
@@ -48,8 +49,44 @@ export async function crearSolicitudPrestamo(data: CrearSolicitudParams) {
     return { success: false, message: `Error al crear la solicitud: ${error.message}` }
   }
 
+  // Obtener datos del solicitante y del elemento para el correo a los admins
+  try {
+    const { data: elementoInfo } = await supabase
+      .from('elementos')
+      .select('nombre, placa_sena')
+      .eq('id', data.elementoId)
+      .single()
+
+    const { data: perfilInfo } = await supabase
+      .from('perfiles')
+      .select('nombre_completo, documento_identidad, ficha_caracterizacion')
+      .eq('id', user.id)
+      .single()
+
+    await notificarNuevaSolicitud({
+      nombreAprendiz: perfilInfo?.nombre_completo || 'Usuario SENA',
+      documento: perfilInfo?.ficha_caracterizacion
+        ? `Ficha: ${perfilInfo.ficha_caracterizacion}`
+        : perfilInfo?.documento_identidad || 'Sin documento',
+      elementos: [
+        {
+          nombre: elementoInfo?.nombre || 'Elemento',
+          placa_sena: elementoInfo?.placa_sena || 'S/N',
+          cantidad: data.cantidad,
+        },
+      ],
+      fecha: new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }),
+      motivo: data.motivo,
+      fechaInicio: new Date(data.fechaInicio).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }),
+      fechaFin: new Date(data.fechaFin).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }),
+    })
+  } catch (emailError) {
+    console.error('Error enviando correo de nueva solicitud individual:', emailError)
+  }
+
   revalidatePath('/catalogo')
   revalidatePath('/mis-prestamos')
+  revalidatePath('/solicitudes')
 
   return {
     success: true,
@@ -57,7 +94,7 @@ export async function crearSolicitudPrestamo(data: CrearSolicitudParams) {
   }
 }
 
-// 2. Solicitud Múltiple (Genera 1 solo grupo_id para todos los elementos seleccionados)
+// 2. Solicitud Múltiple
 export async function crearSolicitudPrestamoMultiple(data: CrearSolicitudMultipleParams) {
   const supabase = await createClient()
 
@@ -88,8 +125,47 @@ export async function crearSolicitudPrestamoMultiple(data: CrearSolicitudMultipl
     return { success: false, message: `Error al crear las solicitudes: ${error.message}` }
   }
 
+  // Obtener datos consolidados para enviar 1 solo correo con todos los elementos
+  try {
+    const idsElementos = data.elementos.map((e) => e.id)
+    const { data: elementosInfo } = await supabase
+      .from('elementos')
+      .select('id, nombre, placa_sena')
+      .in('id', idsElementos)
+
+    const { data: perfilInfo } = await supabase
+      .from('perfiles')
+      .select('nombre_completo, documento_identidad, ficha_caracterizacion')
+      .eq('id', user.id)
+      .single()
+
+    const listaElementosMapeados = (elementosInfo || []).map((el) => {
+      const match = data.elementos.find((item) => item.id === el.id)
+      return {
+        nombre: el.nombre,
+        placa_sena: el.placa_sena,
+        cantidad: match?.cantidad || 1,
+      }
+    })
+
+    await notificarNuevaSolicitud({
+      nombreAprendiz: perfilInfo?.nombre_completo || 'Usuario SENA',
+      documento: perfilInfo?.ficha_caracterizacion
+        ? `Ficha: ${perfilInfo.ficha_caracterizacion}`
+        : perfilInfo?.documento_identidad || 'Sin documento',
+      elementos: listaElementosMapeados,
+      fecha: new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }),
+      motivo: data.motivo,
+      fechaInicio: new Date(data.fechaInicio).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }),
+      fechaFin: new Date(data.fechaFin).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }),
+    })
+  } catch (emailError) {
+    console.error('Error enviando correo de nueva solicitud múltiple:', emailError)
+  }
+
   revalidatePath('/catalogo')
   revalidatePath('/mis-prestamos')
+  revalidatePath('/solicitudes')
 
   return {
     success: true,
